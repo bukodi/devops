@@ -30,6 +30,7 @@ else
 fi
 
 #TODO test ping hostname (if not then add to /etc/host)
+echo 'ADMIN_PASSWORD=>>>'$ADMIN_PASSWOPRD'<<<'
 exit
 curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh | bash   
 
