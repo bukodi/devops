@@ -14,8 +14,10 @@ fi
 if [ $# -eq 0 ]; then
         echo 'Enter a new password for the admin user!'
         read -s -p "Password:" psw1
+        echo 'ADMIN_PASSWORD1=>>>'$psw1'<<<'
         echo ''
         read -s -p "Verify:" psw2
+        echo 'ADMIN_PASSWORD2=>>>'$psw2'<<<'
         echo ''
         if [ $psw1 != $psw2 ]; then
                 echo 'Password and verification are not equal!'
