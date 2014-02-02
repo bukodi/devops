@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Start this: curl http://www.bukodi.com/installDevServer.sh | bash
+# Start this: curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh | bash
 
-curl http://www.bukodi.com/apt-get-all.sh | bash 
+SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
+
+curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh | bash 
 
 if [ `whoami` != root ]; then
     echo 'Please run this script as root or using sudo'
