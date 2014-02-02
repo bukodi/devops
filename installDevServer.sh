@@ -3,8 +3,7 @@
 # Start this: curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh | bash
 
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
-
-curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh | bash 
+EXTERNAL_HOST_NAME="devserver.bukodi.com"
 
 if [ `whoami` != root ]; then
     echo 'Please run this script as root or using sudo'
@@ -30,10 +29,10 @@ else
         exit
 fi
 
-EXTERNAL_HOST_NAME="devserver.bukodi.com"
-  
-#TODO test is the root
 #TODO test ping hostname (if not then add to /etc/host)
+exit
+curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh | bash   
+
 
 echo $'\n\n*** Create admin user****'
 useradd admin
