@@ -3,14 +3,13 @@
 # Start this: bash <(curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh) [AdminPassw0rd]
 
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
-EXTERNAL_HOST_NAME="devserver.bukodi.com"
+EXTERNAL_HOST_NAME=$(hostname -A)
 
 if [ `whoami` != root ]; then
     echo 'Please run this script as root or using sudo'
     exit
 fi
 
-# Start this: curl http://www.bukodi.com/installDevServer.sh | bash
 if [ $# -eq 0 ]; then
     echo 'Enter a new password for the admin user!'
     read -s -p "Password:" psw1
@@ -30,7 +29,7 @@ else
     exit
 fi
 
-#TODO test ping $(hostname -A) (if not then add to /etc/host)
+#TODO test ping EXTERNAL_HOST_NAME (if not then add to /etc/host)
 
 #Execute apt-get-all script:
 bash <(curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh)
