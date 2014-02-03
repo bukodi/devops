@@ -3,7 +3,7 @@
 # Start this: bash <(curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh) [AdminPassw0rd]
 
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
-EXTERNAL_HOST_NAME=$(hostname -A)
+EXTERNAL_HOST_NAME=$(hostname -f)
 START_TIME=$(date)
 
 if [ `whoami` != root ]; then
@@ -93,6 +93,10 @@ cd -
 service webmin restart
 while ! echo exit | nc localhost 10001; do sleep 2s; done
 
+echo $'\n\n*** Configure Shellinabox ****'
+sed -i 's/^SHELLINABOX_PORT=.*$/SHELLINABOX_PORT=4201\nSHELLINABOX_ARGS=\" --localhost-only --disable-ssl --disable-ssl-menu\"/' /etc/init.d/shellinabox
+service shellinabox restart
+
 echo $'\n\n*** Configure Apache  ****'
 cd /etc/apache2
 #Load modules
@@ -113,6 +117,8 @@ echo "ProxyPass /jenkins http://127.0.0.1:8081/jenkins" >> conf-available/revers
 echo "ProxyPassReverse /jenkins http://127.0.0.1:8081/jenkins" >> conf-available/reverse-proxies.conf
 echo "ProxyPass /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
 echo "ProxyPassReverse /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
+echo "ProxyPass /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
+echo "ProxyPassReverse /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
 cd -
 
 #Create index.html
@@ -128,4 +134,11 @@ mv index.html /var/www/index.html
 #Restart apache
 service apache2 restart
 
+#SHELLINABOX_PORT="4201"
+# SHELLINABOX_ARGS="--localhost-only --disable-ssl --disable-ssl-menu"
+
+
+
 echo "Completed. ( $START_TIME - $(date) )"
+
+
