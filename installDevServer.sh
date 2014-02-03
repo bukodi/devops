@@ -42,12 +42,12 @@ adduser admin sudo
 adduser admin users
 echo "admin:$ADMIN_PASSWORD" | chpasswd
 
-echo $'\n\n*** Change Jenkins URL to http://localhost:8081/jenkins ****'
-sed -i 's/HTTP_PORT=8080/HTTP_PORT=8081/' /etc/default/jenkins
+echo $'\n\n*** Change Jenkins URL to http://localhost:8082/jenkins ****'
+sed -i 's/HTTP_PORT=8080/HTTP_PORT=8082/' /etc/default/jenkins
 sed -i 's/JENKINS_ARGS="/JENKINS_ARGS="--prefix=\/jenkins /' /etc/default/jenkins
-sed -i 's/JENKINS_URL=/JENKINS_URL="http:\/\/127.0.0.1:8081\/jenkins"/' /etc/jenkins/cli.conf
-export JENKINS_URL="http://127.0.0.1:8081/jenkins"
-echo $'JENKINS_URL="http://127.0.0.1:8081/jenkins"' >> /etc/environment
+sed -i 's/JENKINS_URL=/JENKINS_URL="http:\/\/127.0.0.1:8082\/jenkins"/' /etc/jenkins/cli.conf
+export JENKINS_URL="http://127.0.0.1:8082/jenkins"
+echo $'JENKINS_URL="http://127.0.0.1:8082/jenkins"' >> /etc/environment
 adduser jenkins shadow
 service jenkins restart
 while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do echo 'Waiting for Jenkins restart...'; sleep 2s; done
@@ -112,8 +112,8 @@ sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\t\tInclude conf-avai
 sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\n\tRewriteEngine On\n\tRewriteRule \^(\.\*)\$ https:\/\/%{HTTP_HOST}\$1 \[R=301,L\]\n/' sites-enabled/000-default.conf
 
 #Setup proxies
-echo "ProxyPass /jenkins http://127.0.0.1:8081/jenkins" >> conf-available/reverse-proxies.conf
-echo "ProxyPassReverse /jenkins http://127.0.0.1:8081/jenkins" >> conf-available/reverse-proxies.conf
+echo "ProxyPass /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
+echo "ProxyPassReverse /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
 echo "ProxyPass /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
 echo "ProxyPassReverse /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
 echo "ProxyPass /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
@@ -124,7 +124,7 @@ cd -
 echo '<html>' >> index.html
 echo '<head><title>Development server</title></head>' >> index.html
 echo '<body>' >> index.html
-echo ' <p><a href="https://./jenkins">Jenkins</a></p>' >> index.html
+echo ' <p><a href="/jenkins">Jenkins</a></p>' >> index.html
 echo ' <p><a href="/webmin/">Webmin</a></p>' >> index.html
 echo ' <p><a href="/shellinabox/">ShellInABox</a></p>' >> index.html
 echo '</body>' >> index.html
