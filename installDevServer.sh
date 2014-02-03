@@ -3,7 +3,7 @@
 # Start this: bash <(curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh) [AdminPassw0rd]
 
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
-EXTERNAL_HOST_NAME=$(hostname)
+EXTERNAL_HOST_NAME=$(hostname -f)
 START_TIME=$(date)
 
 if [ `whoami` != root ]; then
