@@ -3,7 +3,7 @@
 # Start this: bash <(curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh) [AdminPassw0rd]
 
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
-EXTERNAL_HOST_NAME=$(hostname -f)
+EXTERNAL_HOST_NAME=$(hostname)
 START_TIME=$(date)
 
 if [ `whoami` != root ]; then
@@ -91,7 +91,6 @@ echo "webprefixnoredir=1" >> config
 echo "referer=$EXTERNAL_HOST_NAME" >> config
 cd -
 service webmin restart
-while ! echo exit | nc localhost 10001; do sleep 2s; done
 
 echo $'\n\n*** Configure Shellinabox ****'
 sed -i 's/^SHELLINABOX_PORT=.*$/SHELLINABOX_PORT=4201\nSHELLINABOX_ARGS=\" --localhost-only --disable-ssl --disable-ssl-menu\"/' /etc/init.d/shellinabox
@@ -127,6 +126,7 @@ echo '<head><title>Development server</title></head>' >> index.html
 echo '<body>' >> index.html
 echo ' <p><a href="https://./jenkins">Jenkins</a></p>' >> index.html
 echo ' <p><a href="/webmin/">Webmin</a></p>' >> index.html
+echo ' <p><a href="/shellinabox/">ShellInABox</a></p>' >> index.html
 echo '</body>' >> index.html
 echo '</html>' >> index.html
 mv index.html /var/www/index.html
