@@ -23,7 +23,6 @@ apt-get -y install mc \
  apache2 \
  webmin shellinabox \
  tomcat7 tomcat7-admin tomcat7-user \
- gcc make \
  git-core
 
 echo "Completed. ( $START_TIME - $(date) )"
