@@ -23,6 +23,7 @@ if [ $# -eq 0 ]; then
     fi
     ADMIN_PASSWORD=$psw1
 elif [ $# -eq 1 ]; then
+    echo 'WARNING: the bash history contains the password provided as argument!'
     ADMIN_PASSWORD=$1
 else
     echo 'Wrong number of arguments!'
