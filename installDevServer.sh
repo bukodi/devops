@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Start this: source <(curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh) [AdminPassw0rd]
+# Start this: bash <(curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh) [AdminPassw0rd]
 
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
 EXTERNAL_HOST_NAME="devserver.bukodi.com"
@@ -12,29 +12,27 @@ fi
 
 # Start this: curl http://www.bukodi.com/installDevServer.sh | bash
 if [ $# -eq 0 ]; then
-        echo 'Enter a new password for the admin user!'
-        read -s -p "Password:" psw1
-        echo 'ADMIN_PASSWORD1=>>>'$psw1'<<<'
-        echo ''
-        read -s -p "Verify:" psw2
-        echo 'ADMIN_PASSWORD2=>>>'$psw2'<<<'
-        echo ''
-        if [ $psw1 != $psw2 ]; then
-                echo 'Password and verification are not equal!'
-                exit
-        fi;
-        ADMIN_PASSWORD=$psw1
-elif [ $# -eq 1 ]; then
-        ADMIN_PASSWORD=$1
-else
-        echo 'Wrong number of arguments!'
+    echo 'Enter a new password for the admin user!'
+    read -s -p "Password:" psw1
+    echo ''
+    read -s -p "Verify:" psw2
+    echo ''
+    if [ $psw1 != $psw2 ]; then
+        echo 'Password and verification are not equal!'
         exit
+    fi
+    ADMIN_PASSWORD=$psw1
+elif [ $# -eq 1 ]; then
+    ADMIN_PASSWORD=$1
+else
+    echo 'Wrong number of arguments!'
+    exit
 fi
 
-#TODO test ping hostname (if not then add to /etc/host)
-echo 'ADMIN_PASSWORD=>>>'$ADMIN_PASSWOPRD'<<<'
-exit
-curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh | bash   
+#TODO test ping $(hostname -A) (if not then add to /etc/host)
+
+#Execute apt-get-all script:
+bash <(curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh)
 
 
 echo $'\n\n*** Create admin user****'
