@@ -49,7 +49,7 @@ export JENKINS_URL="http://127.0.0.1:8081/jenkins"
 echo $'JENKINS_URL="http://127.0.0.1:8081/jenkins"' >> /etc/environment
 adduser jenkins shadow
 service jenkins restart
-while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do echo 'Wait for Jenkins restart...'; sleep 2s; done
+while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do echo 'Waiting for Jenkins restart...'; sleep 2s; done
 
 #Wait for update
 jenkins-cli groovysh 'jenkins.model.Jenkins.instance.updateCenter.updateAllSites()'
@@ -64,7 +64,7 @@ jenkins-cli groovysh 'jenkins.model.Jenkins.instance.save()'  --username admin -
 
 #
 service jenkins restart
-while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do echo 'Wait for Jenkins restart...'; sleep 2s; done
+while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do echo 'Waiting for Jenkins restart...'; sleep 2s; done
 
 echo $'\n\n*** Grant access to Tomcat  ****'
 cd /etc/tomcat7
@@ -90,7 +90,7 @@ echo "webprefixnoredir=1" >> config
 echo "referer=$EXTERNAL_HOST_NAME" >> config
 cd -
 service webmin restart
-while ! echo exit | nc localhost 10001; do sleep 10; done
+while ! echo exit | nc localhost 10001; do sleep 2s; done
 
 echo $'\n\n*** Configure Apache  ****'
 cd /etc/apache2
