@@ -18,16 +18,12 @@ apt-get update
 apt-get -y upgrade
 
 apt-get -y install mc \
- openjdk-7-jdk \
- maven \
- jenkins \
- jenkins-cli \
+ openjdk-7-jdk maven \
+ jenkins jenkins-cli \
  apache2 \
- webmin \
- tomcat7 \
- tomcat7-admin \
- tomcat7-user \
+ webmin shellinabox \
+ tomcat7 tomcat7-admin tomcat7-user \
+ gcc make \
  git-core
 
-echo "Start: $START_TIME"
-echo "Start: $(date)"
+echo "Completed. ( $START_TIME - $(date) )"
