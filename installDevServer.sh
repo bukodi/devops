@@ -4,6 +4,7 @@
 
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
 EXTERNAL_HOST_NAME=$(hostname -A)
+START_TIME=$(date)
 
 if [ `whoami` != root ]; then
     echo 'Please run this script as root or using sudo'
@@ -126,3 +127,5 @@ mv index.html /var/www/index.html
 
 #Restart apache
 service apache2 restart
+
+echo "Completed. ( $START_TIME - $(date) )"
