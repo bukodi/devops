@@ -37,7 +37,11 @@ bash <(curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh)
 
 
 echo $'\n\n*** Create admin user****'
-useradd admin
+if [ -z $(getent group admin) ]; then 
+    useradd admin
+else
+    useradd admin -g admin
+fi
 adduser admin sudo
 adduser admin users
 echo "admin:$ADMIN_PASSWORD" | chpasswd
@@ -50,11 +54,17 @@ export JENKINS_URL="http://127.0.0.1:8082/jenkins"
 echo $'JENKINS_URL="http://127.0.0.1:8082/jenkins"' >> /etc/environment
 adduser jenkins shadow
 service jenkins restart
-while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do echo 'Waiting for Jenkins restart...'; sleep 2s; done
+while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do 
+    echo 'Waiting for Jenkins restart...'
+    sleep 2s
+done
 
 #Wait for update
 jenkins-cli groovysh 'jenkins.model.Jenkins.instance.updateCenter.updateAllSites()'
-while [ -z "$(curl $JENKINS_URL/pluginManager/advanced 2>&1 | grep 'Update information obtained:' | grep 'min\|sec')" ]; do echo 'Wait for Jenkins update site refresh...'; sleep 2s; done
+while [ -z "$(curl $JENKINS_URL/pluginManager/advanced 2>&1 | grep 'Update information obtained:' | grep 'min\|sec')" ]; do 
+    echo 'Waiting for Jenkins update site refresh...'
+    sleep 2s
+done
 
 #Install plugins and enable jenkins security 	 
 jenkins-cli install-plugin git -deploy 
@@ -65,7 +75,10 @@ jenkins-cli groovysh 'jenkins.model.Jenkins.instance.save()'  --username admin -
 
 #
 service jenkins restart
-while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do echo 'Waiting for Jenkins restart...'; sleep 2s; done
+while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do 
+    echo 'Waiting for Jenkins restart...'
+    sleep 2s
+done
 
 echo $'\n\n*** Grant access to Tomcat  ****'
 cd /etc/tomcat7
@@ -134,11 +147,4 @@ mv index.html /var/www/index.html
 #Restart apache
 service apache2 restart
 
-#SHELLINABOX_PORT="4201"
-# SHELLINABOX_ARGS="--localhost-only --disable-ssl --disable-ssl-menu"
-
-
-
 echo "Completed. ( $START_TIME - $(date) )"
-
-
