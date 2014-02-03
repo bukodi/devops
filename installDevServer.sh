@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Start this: curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh | bash
+# Start this: source <(curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh) [AdminPassw0rd]
 
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
 EXTERNAL_HOST_NAME="devserver.bukodi.com"
