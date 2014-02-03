@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Start this: curl https://raw2.github.com/bukodi/devops/master/scripts/apt-get-all.sh | bash
+# Start this: bash <(curl https://raw2.github.com/bukodi/devops/master/scripts/apt-get-all.sh)
 
 START_TIME=$(date)
 echo "Start: $START_TIME"
