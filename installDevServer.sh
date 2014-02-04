@@ -6,6 +6,7 @@ SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
 EXTERNAL_HOST_NAME=$(hostname -f)
 START_TIME=$(date)
 
+
 if [ `whoami` != root ]; then
     echo 'Please run this script as root or using sudo'
     exit
@@ -35,119 +36,141 @@ fi
 #Execute apt-get-all script:
 bash <(curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh)
 
+createAdminUser $ADMIN_PASSWORD
+setupJenkins
+setupTomcat
+setupWebmin
+setupShellinabox
+setupApache
 
-echo $'\n\n*** Create admin user****'
-if [ -z $(getent group admin) ]; then 
-    useradd admin
-else
-    useradd admin -g admin
-fi
-adduser admin sudo
-adduser admin users
-echo "admin:$ADMIN_PASSWORD" | chpasswd
+echo "Completed. ( $START_TIME - $(date) )"
+exit 0
 
-echo $'\n\n*** Change Jenkins URL to http://localhost:8082/jenkins ****'
-sed -i 's/HTTP_PORT=8080/HTTP_PORT=8082/' /etc/default/jenkins
-sed -i 's/JENKINS_ARGS="/JENKINS_ARGS="--prefix=\/jenkins /' /etc/default/jenkins
-sed -i 's/JENKINS_URL=/JENKINS_URL="http:\/\/127.0.0.1:8082\/jenkins"/' /etc/jenkins/cli.conf
-export JENKINS_URL="http://127.0.0.1:8082/jenkins"
-echo $'JENKINS_URL="http://127.0.0.1:8082/jenkins"' >> /etc/environment
-adduser jenkins shadow
-service jenkins restart
-while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do 
-    echo 'Waiting for Jenkins restart...'
-    sleep 2s
-done
+###############################################################################################
 
-#Wait for update
-jenkins-cli groovysh 'jenkins.model.Jenkins.instance.updateCenter.updateAllSites()'
-while [ -z "$(curl $JENKINS_URL/pluginManager/advanced 2>&1 | grep 'Update information obtained:' | grep 'min\|sec')" ]; do 
-    echo 'Waiting for Jenkins update site refresh...'
-    sleep 2s
-done
+function createAdminUser {
+    echo $'\n\n*** Create admin user****'
+    if [ -z $(getent group admin) ]; then 
+        useradd admin
+    else
+        useradd admin -g admin
+    fi
+    adduser admin sudo
+    adduser admin users
+    echo "admin:$1" | chpasswd
+}
 
-#Install plugins and enable jenkins security 	 
-jenkins-cli install-plugin git -deploy 
-jenkins-cli install-plugin git-client -deploy
-jenkins-cli groovysh 'jenkins.model.Jenkins.instance.securityRealm = new hudson.security.PAMSecurityRealm(null)'
-jenkins-cli groovysh 'jenkins.model.Jenkins.instance.authorizationStrategy = new hudson.security.FullControlOnceLoggedInAuthorizationStrategy()'
-jenkins-cli groovysh 'jenkins.model.Jenkins.instance.save()'  --username admin --password $ADMIN_PASSWORD
+function setupJenkins {
+    echo $'\n\n*** Change Jenkins URL to http://localhost:8082/jenkins ****'
+    sed -i 's/HTTP_PORT=8080/HTTP_PORT=8082/' /etc/default/jenkins
+    sed -i 's/JENKINS_ARGS="/JENKINS_ARGS="--prefix=\/jenkins /' /etc/default/jenkins
+    sed -i 's/JENKINS_URL=/JENKINS_URL="http:\/\/127.0.0.1:8082\/jenkins"/' /etc/jenkins/cli.conf
+    export JENKINS_URL="http://127.0.0.1:8082/jenkins"
+    echo $'JENKINS_URL="http://127.0.0.1:8082/jenkins"' >> /etc/environment
+    adduser jenkins shadow
+    service jenkins restart
+    while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do 
+        echo 'Waiting for Jenkins restart...'
+        sleep 2s
+    done
+    
+    #Wait for update
+    jenkins-cli groovysh 'jenkins.model.Jenkins.instance.updateCenter.updateAllSites()'
+    while [ -z "$(curl $JENKINS_URL/pluginManager/advanced 2>&1 | grep 'Update information obtained:' | grep 'min\|sec')" ]; do 
+        echo 'Waiting for Jenkins update site refresh...'
+        sleep 2s
+    done
+    
+    #Install plugins and enable jenkins security 	 
+    jenkins-cli install-plugin git -deploy 
+    jenkins-cli install-plugin git-client -deploy
+    jenkins-cli groovysh 'jenkins.model.Jenkins.instance.securityRealm = new hudson.security.PAMSecurityRealm(null)'
+    jenkins-cli groovysh 'jenkins.model.Jenkins.instance.authorizationStrategy = new hudson.security.FullControlOnceLoggedInAuthorizationStrategy()'
+    jenkins-cli groovysh 'jenkins.model.Jenkins.instance.save()'  --username admin --password $ADMIN_PASSWORD
+    
+    #
+    service jenkins restart
+    while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do 
+        echo 'Waiting for Jenkins restart...'
+        sleep 2s
+    done
+}
 
-#
-service jenkins restart
-while [ -z "$(jenkins-cli who-am-i 2>&1 | grep 'Authenticated as:')" ]; do 
-    echo 'Waiting for Jenkins restart...'
-    sleep 2s
-done
+function setupTomcat {
+    echo $'\n\n*** Grant access to Tomcat  ****'
+    cd /etc/tomcat7
+    mv tomcat-users.xml tomcat-users.xml.original
+    echo "<?xml version='1.0' encoding='utf-8'?>" > tomcat-users.xml
+    echo "<tomcat-users>" >> tomcat-users.xml
+    echo "  <role rolename=\"manager-gui\"/>" >> tomcat-users.xml
+    echo "  <role rolename=\"admin-gui\"/>" >> tomcat-users.xml
+    echo "  <user username=\"admin\" password=\"$ADMIN_PASSWORD\" roles=\"manager-gui,admin-gui\"/>" >> tomcat-users.xml
+    echo "</tomcat-users>" >> tomcat-users.xml
+    cd - > /dev/null
+    service tomcat7 restart
+}
 
-echo $'\n\n*** Grant access to Tomcat  ****'
-cd /etc/tomcat7
-mv tomcat-users.xml tomcat-users.xml.original
-echo "<?xml version='1.0' encoding='utf-8'?>" > tomcat-users.xml
-echo "<tomcat-users>" >> tomcat-users.xml
-echo "  <role rolename=\"manager-gui\"/>" >> tomcat-users.xml
-echo "  <role rolename=\"admin-gui\"/>" >> tomcat-users.xml
-echo "  <user username=\"admin\" password=\"$ADMIN_PASSWORD\" roles=\"manager-gui,admin-gui\"/>" >> tomcat-users.xml
-echo "</tomcat-users>" >> tomcat-users.xml
-cd - > /dev/null
-service tomcat7 restart
+function setupWebmin {
+    echo $'\n\n*** Configure Webmin ****'
+    cd /etc/webmin
+    sed -i 's/ssl=1/ssl=0/' miniserv.conf
+    sed -i 's/port=10000/port=10001/' miniserv.conf
+    sed -i 's/listen=10000/listen=10001/' miniserv.conf
+    
+    echo 'bind=127.0.0.1' >> miniserv.conf
+    echo "webprefix=/webmin" >> config
+    echo "webprefixnoredir=1" >> config
+    echo "referer=$EXTERNAL_HOST_NAME" >> config
+    cd - > /dev/null
+    service webmin restart
+}
 
-echo $'\n\n*** Configure Webmin ****'
-cd /etc/webmin
-sed -i 's/ssl=1/ssl=0/' miniserv.conf
-sed -i 's/port=10000/port=10001/' miniserv.conf
-sed -i 's/listen=10000/listen=10001/' miniserv.conf
+function setupShellinabox {
+    echo $'\n\n*** Configure Shellinabox ****'
+    sed -i 's/^SHELLINABOX_PORT=.*$/SHELLINABOX_PORT=4201\nSHELLINABOX_ARGS=\" --localhost-only --disable-ssl --disable-ssl-menu\"/' /etc/init.d/shellinabox
+    service shellinabox restart
+}
 
-echo 'bind=127.0.0.1' >> miniserv.conf
-echo "webprefix=/webmin" >> config
-echo "webprefixnoredir=1" >> config
-echo "referer=$EXTERNAL_HOST_NAME" >> config
-cd - > /dev/null
-service webmin restart
-
-echo $'\n\n*** Configure Shellinabox ****'
-sed -i 's/^SHELLINABOX_PORT=.*$/SHELLINABOX_PORT=4201\nSHELLINABOX_ARGS=\" --localhost-only --disable-ssl --disable-ssl-menu\"/' /etc/init.d/shellinabox
-service shellinabox restart
-
-echo $'\n\n*** Configure Apache  ****'
-cd /etc/apache2
-#Load modules
-a2enmod ssl
-a2enmod proxy
-a2enmod proxy_http
-a2enmod rewrite
-
-#Enable SSL
-ln -s /etc/apache2/sites-available/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf
-sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\t\tInclude conf-available\/reverse-proxies.conf/' sites-enabled/default-ssl.conf
-
-#Redirect http to https
-sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\n\tRewriteEngine On\n\tRewriteRule \^(\.\*)\$ https:\/\/%{HTTP_HOST}\$1 \[R=301,L\]\n/' sites-enabled/000-default.conf
-
-#Setup proxies
-echo "ProxyPass /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
-echo "ProxyPassReverse /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
-echo "ProxyPass /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
-echo "ProxyPassReverse /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
-echo "ProxyPass /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
-echo "ProxyPassReverse /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
-cd - > /dev/null
-
-#Create index.html
-echo '<html>' >> index.html
-echo '<head><title>Development server</title></head>' >> index.html
-echo '<body>' >> index.html
-echo ' <p><a href="/jenkins">Jenkins</a></p>' >> index.html
-echo ' <p><a href="/webmin/">Webmin</a></p>' >> index.html
-echo ' <p><a href="/shellinabox/">ShellInABox</a></p>' >> index.html
-echo '</body>' >> index.html
-echo '</html>' >> index.html
-mv index.html /var/www/index.html
-
-#Restart apache
-service apache2 restart
+function setupApache {
+    echo $'\n\n*** Configure Apache  ****'
+    cd /etc/apache2
+    #Load modules
+    a2enmod ssl
+    a2enmod proxy
+    a2enmod proxy_http
+    a2enmod rewrite
+    
+    #Enable SSL
+    ln -s /etc/apache2/sites-available/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf
+    sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\t\tInclude conf-available\/reverse-proxies.conf/' sites-enabled/default-ssl.conf
+    
+    #Redirect http to https
+    sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\n\tRewriteEngine On\n\tRewriteRule \^(\.\*)\$ https:\/\/%{HTTP_HOST}\$1 \[R=301,L\]\n/' sites-enabled/000-default.conf
+    
+    #Setup proxies
+    echo "ProxyPass /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
+    echo "ProxyPassReverse /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
+    echo "ProxyPass /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
+    echo "ProxyPassReverse /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
+    echo "ProxyPass /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
+    echo "ProxyPassReverse /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
+    cd - > /dev/null
+    
+    #Create index.html
+    echo '<html>' >> index.html
+    echo '<head><title>Development server</title></head>' >> index.html
+    echo '<body>' >> index.html
+    echo ' <p><a href="/jenkins">Jenkins</a></p>' >> index.html
+    echo ' <p><a href="/webmin/">Webmin</a></p>' >> index.html
+    echo ' <p><a href="/shellinabox/">ShellInABox</a></p>' >> index.html
+    echo '</body>' >> index.html
+    echo '</html>' >> index.html
+    mv index.html /var/www/index.html
+    
+    #Restart apache
+    service apache2 restart
+}
 
 # Nexus setup
 # http://jedi.be/blog/2010/10/12/Automating%20Sonatype%20Nexus%20with%20REST%20calls/
 
-echo "Completed. ( $START_TIME - $(date) )"
