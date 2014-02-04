@@ -43,6 +43,14 @@ setupWebmin
 setupShellinabox
 setupApache
 
+#TODO
+# setupNexus
+# create function : addApacheProxy
+# add more Jenkins plugin
+# redirect Tomcat test virtual host
+# setupSelenuim
+# create logfile
+
 echo "Completed. ( $START_TIME - $(date) )"
 exit 0
 
