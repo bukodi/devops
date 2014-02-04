@@ -89,7 +89,7 @@ echo "  <role rolename=\"manager-gui\"/>" >> tomcat-users.xml
 echo "  <role rolename=\"admin-gui\"/>" >> tomcat-users.xml
 echo "  <user username=\"admin\" password=\"$ADMIN_PASSWORD\" roles=\"manager-gui,admin-gui\"/>" >> tomcat-users.xml
 echo "</tomcat-users>" >> tomcat-users.xml
-cd -
+cd - > /dev/null
 service tomcat7 restart
 
 echo $'\n\n*** Configure Webmin ****'
@@ -102,7 +102,7 @@ echo 'bind=127.0.0.1' >> miniserv.conf
 echo "webprefix=/webmin" >> config
 echo "webprefixnoredir=1" >> config
 echo "referer=$EXTERNAL_HOST_NAME" >> config
-cd -
+cd - > /dev/null
 service webmin restart
 
 echo $'\n\n*** Configure Shellinabox ****'
@@ -131,7 +131,7 @@ echo "ProxyPass /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-prox
 echo "ProxyPassReverse /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
 echo "ProxyPass /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
 echo "ProxyPassReverse /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
-cd -
+cd - > /dev/null
 
 #Create index.html
 echo '<html>' >> index.html
@@ -146,5 +146,8 @@ mv index.html /var/www/index.html
 
 #Restart apache
 service apache2 restart
+
+# Nexus setup
+# http://jedi.be/blog/2010/10/12/Automating%20Sonatype%20Nexus%20with%20REST%20calls/
 
 echo "Completed. ( $START_TIME - $(date) )"
