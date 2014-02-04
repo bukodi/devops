@@ -34,7 +34,7 @@ fi
 #TODO test ping EXTERNAL_HOST_NAME (if not then add to /etc/host)
 
 #Execute apt-get-all script:
-#bash <(curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh)
+bash <(curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh)
 
 ###############################################################################################
 
