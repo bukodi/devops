@@ -34,25 +34,7 @@ fi
 #TODO test ping EXTERNAL_HOST_NAME (if not then add to /etc/host)
 
 #Execute apt-get-all script:
-bash <(curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh)
-
-createAdminUser $ADMIN_PASSWORD
-setupJenkins
-setupTomcat
-setupWebmin
-setupShellinabox
-setupApache
-
-#TODO
-# setupNexus
-# create function : addApacheProxy
-# add more Jenkins plugin
-# redirect Tomcat test virtual host
-# setupSelenuim
-# create logfile
-
-echo "Completed. ( $START_TIME - $(date) )"
-exit 0
+#bash <(curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh)
 
 ###############################################################################################
 
@@ -178,6 +160,27 @@ function setupApache {
     #Restart apache
     service apache2 restart
 }
+
+#########################################################################
+
+createAdminUser $ADMIN_PASSWORD
+setupJenkins
+setupTomcat
+setupWebmin
+setupShellinabox
+setupApache
+
+#TODO
+# setupNexus
+# create function : addApacheProxy
+# add more Jenkins plugin
+# redirect Tomcat test virtual host
+# setupSelenuim
+# create logfile
+
+echo "Completed. ( $START_TIME - $(date) )"
+exit 0
+
 
 # Nexus setup
 # http://jedi.be/blog/2010/10/12/Automating%20Sonatype%20Nexus%20with%20REST%20calls/
