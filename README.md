@@ -18,12 +18,26 @@ bash <(curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh) | 
 ```
 
 # Services
-- Creates an admin user
-- Java and Maven
-- Jenkins
-- Apache
-- Webmin
-- Tomcat
+
+## Java and Maven
+
+## Jenkins
+Login with `admin` and the provied password.
+Installed plugins:
+- Git
+
+## Apache
+
+## Webmin
+Login with `admin` and the provied password.
+
+## Tomcat
+
+# Other features
+- Creates a user named `admin`
+- Redirects the http to https
+- Creates reverse proxies for the installed services
+- Creates a default index page  
 
 # Tested platforms
 - Ubuntu Server 13.10 x64 on DigitalOcean
