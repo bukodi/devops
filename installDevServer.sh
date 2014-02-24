@@ -38,6 +38,56 @@ bash <(curl $SCRIPT_BASE_URL/scripts/apt-get-all.sh)
 
 ###############################################################################################
 
+function setupApache {
+    echo $'\n\n*** Configure Apache  ****'
+    cd /etc/apache2
+    #Load modules
+    a2enmod ssl
+    a2enmod proxy
+    a2enmod proxy_http
+    a2enmod rewrite
+    
+    #Enable SSL
+    ln -s /etc/apache2/sites-available/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf
+    sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\t\tInclude conf-available\/reverse-proxies.conf/' sites-enabled/default-ssl.conf
+    
+    #Redirect http to https
+    sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\n\tRewriteEngine On\n\tRewriteRule \^(\.\*)\$ https:\/\/%{HTTP_HOST}\$1 \[R=301,L\]\n/' sites-enabled/000-default.conf
+    
+    #Setup proxies
+    echo "ProxyPass /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
+    echo "ProxyPassReverse /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
+    echo "ProxyPass /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
+    echo "ProxyPassReverse /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
+    echo "ProxyPass /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
+    echo "ProxyPassReverse /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
+    cd - > /dev/null
+    
+    #Create index.html
+    echo '<html>' >> index.html
+    echo '<head><title>Development server</title></head>' >> index.html
+    echo '<body>' >> index.html
+    echo ' <!-- Next link here -->' >> index.html
+    echo ' <p><a href="/jenkins">Jenkins</a></p>' >> index.html
+    echo ' <p><a href="/webmin/">Webmin</a></p>' >> index.html
+    echo ' <p><a href="/shellinabox/">ShellInABox</a></p>' >> index.html
+    echo '</body>' >> index.html
+    echo '</html>' >> index.html
+    mv index.html /var/www/index.html
+    
+    #Restart apache
+    service apache2 restart
+}
+
+function addProxy {
+    # Add a proxy to public https website
+    echo "ProxyPass $1 $2" >> /etc/apache2/conf-available/reverse-proxies.conf
+    echo "ProxyPassReverse $1 $2" >> /etc/apache2/conf-available/reverse-proxies.conf
+
+    sed -i "s/<\/body>/ <p><a href=\"$1\">$3<\/a><\/p>\n<\/body>/" /var/www/index.html
+
+}
+
 function createAdminUser {
     echo $'\n\n*** Create admin user****'
     if [ -z $(getent group admin) ]; then 
@@ -121,45 +171,6 @@ function setupShellinabox {
     service shellinabox restart
 }
 
-function setupApache {
-    echo $'\n\n*** Configure Apache  ****'
-    cd /etc/apache2
-    #Load modules
-    a2enmod ssl
-    a2enmod proxy
-    a2enmod proxy_http
-    a2enmod rewrite
-    
-    #Enable SSL
-    ln -s /etc/apache2/sites-available/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf
-    sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\t\tInclude conf-available\/reverse-proxies.conf/' sites-enabled/default-ssl.conf
-    
-    #Redirect http to https
-    sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\n\tRewriteEngine On\n\tRewriteRule \^(\.\*)\$ https:\/\/%{HTTP_HOST}\$1 \[R=301,L\]\n/' sites-enabled/000-default.conf
-    
-    #Setup proxies
-    echo "ProxyPass /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
-    echo "ProxyPassReverse /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
-    echo "ProxyPass /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
-    echo "ProxyPassReverse /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
-    echo "ProxyPass /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
-    echo "ProxyPassReverse /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
-    cd - > /dev/null
-    
-    #Create index.html
-    echo '<html>' >> index.html
-    echo '<head><title>Development server</title></head>' >> index.html
-    echo '<body>' >> index.html
-    echo ' <p><a href="/jenkins">Jenkins</a></p>' >> index.html
-    echo ' <p><a href="/webmin/">Webmin</a></p>' >> index.html
-    echo ' <p><a href="/shellinabox/">ShellInABox</a></p>' >> index.html
-    echo '</body>' >> index.html
-    echo '</html>' >> index.html
-    mv index.html /var/www/index.html
-    
-    #Restart apache
-    service apache2 restart
-}
 
 #########################################################################
 
