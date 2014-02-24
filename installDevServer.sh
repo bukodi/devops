@@ -55,12 +55,7 @@ function setupApache {
     sed -i 's/DocumentRoot \/var\/www/DocumentRoot \/var\/www\n\n\tRewriteEngine On\n\tRewriteRule \^(\.\*)\$ https:\/\/%{HTTP_HOST}\$1 \[R=301,L\]\n/' sites-enabled/000-default.conf
     
     #Setup proxies
-    echo "ProxyPass /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
-    echo "ProxyPassReverse /jenkins http://127.0.0.1:8082/jenkins" >> conf-available/reverse-proxies.conf
-    echo "ProxyPass /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
-    echo "ProxyPassReverse /webmin/ http://127.0.0.1:10001/" >> conf-available/reverse-proxies.conf
-    echo "ProxyPass /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
-    echo "ProxyPassReverse /shellinabox http://127.0.0.1:4201/" >> conf-available/reverse-proxies.conf
+    echo "# Proxies" >> conf-available/reverse-proxies.conf
     cd - > /dev/null
     
     #Create index.html
@@ -80,12 +75,15 @@ function setupApache {
 }
 
 function addProxy {
+    path=$1
+    url=$2
+    label=$3
+
     # Add a proxy to public https website
-    echo "ProxyPass $1 $2" >> /etc/apache2/conf-available/reverse-proxies.conf
-    echo "ProxyPassReverse $1 $2" >> /etc/apache2/conf-available/reverse-proxies.conf
+    echo "ProxyPass $path $url" >> /etc/apache2/conf-available/reverse-proxies.conf
+    echo "ProxyPassReverse $path $url" >> /etc/apache2/conf-available/reverse-proxies.conf
 
-    sed -i "s/<\/body>/ <p><a href=\"$1\">$3<\/a><\/p>\n<\/body>/" /var/www/index.html
-
+    sed -i "s/<\\/body>/ <p><a href\=\"${path/\//\\/}\">${label/\//\\/}<\\/a><\\/p>\\n<\\/body>/" /var/www/index.html
 }
 
 function createAdminUser {
@@ -134,6 +132,8 @@ function setupJenkins {
         echo 'Waiting for Jenkins restart...'
         sleep 2s
     done
+
+    addProxy '/jenkins' 'http://127.0.0.1:8082/jenkins' 'Jenkins'
 }
 
 function setupTomcat {
@@ -163,31 +163,36 @@ function setupWebmin {
     echo "referer=$EXTERNAL_HOST_NAME" >> config
     cd - > /dev/null
     service webmin restart
+
+    addProxy '/webmin/' 'http://127.0.0.1:10001/' 'Webmin'
 }
 
 function setupShellinabox {
     echo $'\n\n*** Configure Shellinabox ****'
     sed -i 's/^SHELLINABOX_PORT=.*$/SHELLINABOX_PORT=4201\nSHELLINABOX_ARGS=\" --localhost-only --disable-ssl --disable-ssl-menu\"/' /etc/init.d/shellinabox
     service shellinabox restart
+
+    addProxy '/shellinabox' 'http://127.0.0.1:4201/' 'Shell-In-A-Box'
 }
 
 
 #########################################################################
 
 createAdminUser $ADMIN_PASSWORD
+setupApache
 setupJenkins
 setupTomcat
 setupWebmin
 setupShellinabox
-setupApache
+#Restart apache
+service apache2 restart 
 
 #TODO
 # setupNexus
-# create function : addApacheProxy
 # add more Jenkins plugin
 # redirect Tomcat test virtual host
 # setupSelenuim
-# create logfile
+# create logfile > use | tee -a install.log
 
 echo "Completed. ( $START_TIME - $(date) )"
 exit 0
