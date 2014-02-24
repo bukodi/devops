@@ -8,7 +8,7 @@ START_TIME=$(date)
 
 
 if [ `whoami` != root ]; then
-    echo 'Please run this script as root or using sudo'
+    echo 'Please run this script as root'
     exit
 fi
 
@@ -62,10 +62,6 @@ function setupApache {
     echo '<html>' >> index.html
     echo '<head><title>Development server</title></head>' >> index.html
     echo '<body>' >> index.html
-    echo ' <!-- Next link here -->' >> index.html
-    echo ' <p><a href="/jenkins">Jenkins</a></p>' >> index.html
-    echo ' <p><a href="/webmin/">Webmin</a></p>' >> index.html
-    echo ' <p><a href="/shellinabox/">ShellInABox</a></p>' >> index.html
     echo '</body>' >> index.html
     echo '</html>' >> index.html
     mv index.html /var/www/index.html
@@ -74,7 +70,7 @@ function setupApache {
     service apache2 restart
 }
 
-function addProxy {
+function addApacheProxy {
     path=$1
     url=$2
     label=$3
@@ -133,7 +129,7 @@ function setupJenkins {
         sleep 2s
     done
 
-    addProxy '/jenkins' 'http://127.0.0.1:8082/jenkins' 'Jenkins'
+    addApacheProxy '/jenkins' 'http://127.0.0.1:8082/jenkins' 'Jenkins'
 }
 
 function setupTomcat {
@@ -148,6 +144,8 @@ function setupTomcat {
     echo "</tomcat-users>" >> tomcat-users.xml
     cd - > /dev/null
     service tomcat7 restart
+    
+    addApacheProxy '/manager' 'http://127.0.0.1:8080/manager' 'Tomcat Application Manager'
 }
 
 function setupWebmin {
@@ -164,7 +162,7 @@ function setupWebmin {
     cd - > /dev/null
     service webmin restart
 
-    addProxy '/webmin/' 'http://127.0.0.1:10001/' 'Webmin'
+    addApacheProxy '/webmin/' 'http://127.0.0.1:10001/' 'Webmin'
 }
 
 function setupShellinabox {
@@ -172,7 +170,7 @@ function setupShellinabox {
     sed -i 's/^SHELLINABOX_PORT=.*$/SHELLINABOX_PORT=4201\nSHELLINABOX_ARGS=\" --localhost-only --disable-ssl --disable-ssl-menu\"/' /etc/init.d/shellinabox
     service shellinabox restart
 
-    addProxy '/shellinabox' 'http://127.0.0.1:4201/' 'Shell-In-A-Box'
+    addApacheProxy '/shellinabox' 'http://127.0.0.1:4201/' 'Shell-In-A-Box'
 }
 
 
@@ -192,7 +190,6 @@ service apache2 restart
 # add more Jenkins plugin
 # redirect Tomcat test virtual host
 # setupSelenuim
-# create logfile > use | tee -a install.log
 
 echo "Completed. ( $START_TIME - $(date) )"
 exit 0
