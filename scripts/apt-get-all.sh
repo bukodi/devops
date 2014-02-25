@@ -20,6 +20,7 @@ apt-get -y upgrade
 apt-get -y install mc \
  openjdk-7-jdk maven \
  jenkins jenkins-cli \
+ xvfb \
  apache2 \
  webmin shellinabox \
  tomcat7 tomcat7-admin tomcat7-user \
