@@ -225,6 +225,8 @@ service apache2 restart
 # setupSelenuim
 # use the same certificate between installations
 # use getopts() for parsing arguments
+# branding options (Title, color, image)
+# -- /usr/local/nexus/nexus
 # test on AWS
 
 echo "Completed. ( $START_TIME - $(date) )"
