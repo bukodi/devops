@@ -83,7 +83,7 @@ function addApacheProxy {
     echo "ProxyPass $path $url nocanon" >> /etc/apache2/conf-available/reverse-proxies.conf
     echo "ProxyPassReverse $path $url" >> /etc/apache2/conf-available/reverse-proxies.conf
 
-    sed -i "s/<\\/body>/ <p><a href\=\"${path//\//\\\/}\">${label//\//\\\/}<\\/a><\\/p>\\n<\\/body>/" /var/www/index.html
+    sed -i "s/<\\/body>/ <p><a href\=\"${path//\//\\/}\">${label//\//\\/}<\\/a><\\/p>\\n<\\/body>/" /var/www/index.html
 }
 
 function createAdminUser {
@@ -98,6 +98,47 @@ function createAdminUser {
     adduser admin sudo
     adduser admin users
     echo "admin:$adminPassword" | chpasswd
+}
+
+function setupTomcat {
+    echo $'\n\n*** Configure Tomcat  ****'
+    cd /etc/tomcat7
+    mv tomcat-users.xml tomcat-users.xml.original
+    echo "<?xml version='1.0' encoding='utf-8'?>" > tomcat-users.xml
+    echo "<tomcat-users>" >> tomcat-users.xml
+    echo "  <role rolename=\"manager-gui\"/>" >> tomcat-users.xml
+    echo "  <role rolename=\"admin-gui\"/>" >> tomcat-users.xml
+    echo "  <user username=\"admin\" password=\"$ADMIN_PASSWORD\" roles=\"manager-gui,admin-gui\"/>" >> tomcat-users.xml
+    echo "</tomcat-users>" >> tomcat-users.xml
+    cd - > /dev/null
+    service tomcat7 restart
+    
+    addApacheProxy '/manager' 'http://127.0.0.1:8080/manager' 'Tomcat Application Manager'
+}
+
+function setupNexus {
+    echo $'\n\n*** Download and configure Nexus ****'
+    cd /usr/local
+    wget http://www.sonatype.org/downloads/nexus-latest-bundle.tar.gz
+    tar xvfz nexus-latest-bundle.tar.gz
+    rm nexus-latest-bundle.tar.gz
+    ln -s $(ls -d nexus-*) nexus  # create symlink /usr/local/nexus
+    cd - > /dev/null
+
+    #TODO: create service user instead of running sevice with root
+    export NEXUS_HOME="/usr/local/nexus"
+    echo $'NEXUS_HOME="/usr/local/nexus"' >> /etc/environment
+    sed -i 's/^NEXUS_HOME=.*$/NEXUS_HOME=\"\/usr\/local\/nexus\"/' /usr/local/nexus/bin/nexus
+    sed -i 's/^#RUN_AS_USER=.*$/RUN_AS_USER=root/' /usr/local/nexus/bin/nexus
+    
+    sed -i 's/^application-host=.*$/application-host=127.0.0.1/' /usr/local/nexus/conf/nexus.properties
+    
+    ln -s /usr/local/nexus/bin/nexus /etc/init.d/nexus
+    update-rc.d nexus defaults
+    service nexus start
+    #TODO: wait for restart
+    #TODO: cahenge admin password
+    addApacheProxy '/nexus' 'http://127.0.0.1:8081/nexus' 'Nexus'
 }
 
 function setupJenkins {
@@ -140,22 +181,6 @@ function setupJenkins {
     addApacheProxy '/jenkins' 'http://127.0.0.1:8082/jenkins' 'Jenkins'
 }
 
-function setupTomcat {
-    echo $'\n\n*** Configure Tomcat  ****'
-    cd /etc/tomcat7
-    mv tomcat-users.xml tomcat-users.xml.original
-    echo "<?xml version='1.0' encoding='utf-8'?>" > tomcat-users.xml
-    echo "<tomcat-users>" >> tomcat-users.xml
-    echo "  <role rolename=\"manager-gui\"/>" >> tomcat-users.xml
-    echo "  <role rolename=\"admin-gui\"/>" >> tomcat-users.xml
-    echo "  <user username=\"admin\" password=\"$ADMIN_PASSWORD\" roles=\"manager-gui,admin-gui\"/>" >> tomcat-users.xml
-    echo "</tomcat-users>" >> tomcat-users.xml
-    cd - > /dev/null
-    service tomcat7 restart
-    
-    addApacheProxy '/manager' 'http://127.0.0.1:8080/manager' 'Tomcat Application Manager'
-}
-
 function setupWebmin {
     echo $'\n\n*** Configure Webmin ****'
     cd /etc/webmin
@@ -181,29 +206,6 @@ function setupShellinabox {
     addApacheProxy '/shellinabox' 'http://127.0.0.1:4201/' 'Shell-In-A-Box'
 }
 
-function setupNexus {
-    echo $'\n\n*** Download and configure Nexus ****'
-    wget http://www.sonatype.org/downloads/nexus-latest-bundle.tar.gz
-    tar xvfz nexus-latest-bundle.tar.gz
-    rm nexus-latest-bundle.tar.gz
-    ln -s $(ls -d nexus-*) nexus  # create symlink /usr/local/nexus
-
-    #TODO: create service user instead of running sevice with root
-    export NEXUS_HOME="/usr/local/nexus"
-    echo $'NEXUS_HOME="/usr/local/nexus"' >> /etc/environment
-    sed -i 's/^NEXUS_HOME=.*$/NEXUS_HOME=\"\/usr\/local\/nexus\"/' /usr/local/nexus/bin/nexus
-    sed -i 's/^#RUN_AS_USER=.*$/RUN_AS_USER=root/' /usr/local/nexus/bin/nexus
-    
-    sed -i 's/^application-host=.*$/application-host=127.0.0.1/' /usr/local/nexus/conf/nexus.properties
-    
-    ln -s /usr/local/nexus/bin/nexus /etc/init.d/nexus
-    update-rc.d nexus defaults
-    service nexus start
-
-    #TDODO: cahenge admin password
-    addApacheProxy '/nexus' 'http://127.0.0.1:8081/nexus' 'Nexus'
-}
-
 #########################################################################
 
 createAdminUser $ADMIN_PASSWORD
@@ -221,6 +223,9 @@ service apache2 restart
 # add more Jenkins plugin
 # redirect Tomcat test virtual host
 # setupSelenuim
+# use the same certificate between installations
+# use getopts() for parsing arguments
+# test on AWS
 
 echo "Completed. ( $START_TIME - $(date) )"
 exit 0
