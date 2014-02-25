@@ -208,8 +208,9 @@ function setupNexus {
 
 createAdminUser $ADMIN_PASSWORD
 setupApache
-setupJenkins
 setupTomcat
+setupNexus
+setupJenkins
 setupWebmin
 setupShellinabox
 #Restart apache
