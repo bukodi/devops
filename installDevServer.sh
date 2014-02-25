@@ -79,7 +79,7 @@ function addApacheProxy {
     echo "ProxyPass $path $url" >> /etc/apache2/conf-available/reverse-proxies.conf
     echo "ProxyPassReverse $path $url" >> /etc/apache2/conf-available/reverse-proxies.conf
 
-    sed -i "s/<\\/body>/ <p><a href\=\"${path/\//\\/}\">${label/\//\\/}<\\/a><\\/p>\\n<\\/body>/" /var/www/index.html
+    sed -i "s/<\\/body>/ <p><a href\=\"${path//\//\\/}\">${label//\//\\/}<\\/a><\\/p>\\n<\\/body>/" /var/www/index.html
 }
 
 function createAdminUser {
