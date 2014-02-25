@@ -56,6 +56,10 @@ function setupApache {
     
     #Setup proxies
     echo "# Proxies" >> conf-available/reverse-proxies.conf
+    echo "ProxyRequests Off" >> conf-available/reverse-proxies.conf
+    echo "AllowEncodedSlashes NoDecode" >> conf-available/reverse-proxies.conf
+    echo "" >> conf-available/reverse-proxies.conf
+
     cd - > /dev/null
     
     #Create index.html
@@ -76,26 +80,29 @@ function addApacheProxy {
     label=$3
 
     # Add a proxy to public https website
-    echo "ProxyPass $path $url" >> /etc/apache2/conf-available/reverse-proxies.conf
+    echo "ProxyPass $path $url nocanon" >> /etc/apache2/conf-available/reverse-proxies.conf
     echo "ProxyPassReverse $path $url" >> /etc/apache2/conf-available/reverse-proxies.conf
 
-    sed -i "s/<\\/body>/ <p><a href\=\"${path//\//\\/}\">${label//\//\\/}<\\/a><\\/p>\\n<\\/body>/" /var/www/index.html
+    sed -i "s/<\\/body>/ <p><a href\=\"${path//\//\\\/}\">${label//\//\\\/}<\\/a><\\/p>\\n<\\/body>/" /var/www/index.html
 }
 
 function createAdminUser {
+    adminPassword=$1
+    
     echo $'\n\n*** Create admin user****'
     if [ -z $(getent group admin) ]; then 
         useradd admin
     else
-        useradd admin -g admin
+        useradd admin -g admin #If admin user currently exits, just add to the group
     fi
     adduser admin sudo
     adduser admin users
-    echo "admin:$1" | chpasswd
+    echo "admin:$adminPassword" | chpasswd
 }
 
 function setupJenkins {
-    echo $'\n\n*** Change Jenkins URL to http://localhost:8082/jenkins ****'
+    echo $'\n\n*** Configure Jenkins  ****'
+    echo $'\n# Change Jenkins URL to http://localhost:8082/jenkins ****'
     sed -i 's/HTTP_PORT=8080/HTTP_PORT=8082/' /etc/default/jenkins
     sed -i 's/JENKINS_ARGS="/JENKINS_ARGS="--prefix=\/jenkins /' /etc/default/jenkins
     sed -i 's/JENKINS_URL=/JENKINS_URL="http:\/\/127.0.0.1:8082\/jenkins"/' /etc/jenkins/cli.conf
@@ -116,7 +123,8 @@ function setupJenkins {
     done
     
     #Install plugins and enable jenkins security 	 
-    jenkins-cli install-plugin git -deploy 
+    jenkins-cli install-plugin xvfb -deploy
+    jenkins-cli install-plugin git -deploy
     jenkins-cli install-plugin git-client -deploy
     jenkins-cli groovysh 'jenkins.model.Jenkins.instance.securityRealm = new hudson.security.PAMSecurityRealm(null)'
     jenkins-cli groovysh 'jenkins.model.Jenkins.instance.authorizationStrategy = new hudson.security.FullControlOnceLoggedInAuthorizationStrategy()'
@@ -133,7 +141,7 @@ function setupJenkins {
 }
 
 function setupTomcat {
-    echo $'\n\n*** Grant access to Tomcat  ****'
+    echo $'\n\n*** Configure Tomcat  ****'
     cd /etc/tomcat7
     mv tomcat-users.xml tomcat-users.xml.original
     echo "<?xml version='1.0' encoding='utf-8'?>" > tomcat-users.xml
@@ -173,6 +181,28 @@ function setupShellinabox {
     addApacheProxy '/shellinabox' 'http://127.0.0.1:4201/' 'Shell-In-A-Box'
 }
 
+function setupNexus {
+    echo $'\n\n*** Download and configure Nexus ****'
+    wget http://www.sonatype.org/downloads/nexus-latest-bundle.tar.gz
+    tar xvfz nexus-latest-bundle.tar.gz
+    rm nexus-latest-bundle.tar.gz
+    ln -s $(ls -d nexus-*) nexus  # create symlink /usr/local/nexus
+
+    #TODO: create service user instead of running sevice with root
+    export NEXUS_HOME="/usr/local/nexus"
+    echo $'NEXUS_HOME="/usr/local/nexus"' >> /etc/environment
+    sed -i 's/^NEXUS_HOME=.*$/NEXUS_HOME=\"\/usr\/local\/nexus\"/' /usr/local/nexus/bin/nexus
+    sed -i 's/^#RUN_AS_USER=.*$/RUN_AS_USER=root/' /usr/local/nexus/bin/nexus
+    
+    sed -i 's/^application-host=.*$/application-host=127.0.0.1/' /usr/local/nexus/conf/nexus.properties
+    
+    ln -s /usr/local/nexus/bin/nexus /etc/init.d/nexus
+    update-rc.d nexus defaults
+    service nexus start
+
+    #TDODO: cahenge admin password
+    addApacheProxy '/nexus' 'http://127.0.0.1:8081/nexus' 'Nexus'
+}
 
 #########################################################################
 
