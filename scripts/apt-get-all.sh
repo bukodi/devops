@@ -20,7 +20,8 @@ apt-get -y upgrade
 apt-get -y install mc \
  openjdk-7-jdk maven \
  jenkins jenkins-cli \
- xvfb \
+ xvfb xfonts-base xfonts-75dpi xfonts-100dpi \
+ firefox \
  apache2 \
  webmin shellinabox \
  tomcat7 tomcat7-admin tomcat7-user \
