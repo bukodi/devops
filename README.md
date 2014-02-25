@@ -41,4 +41,7 @@ Login with `admin` and the provied password.
 
 # Tested platforms
 - Ubuntu Server 13.10 x64 on DigitalOcean
-
+-- Instance type: 1GB RAM/1 CPU  (Install time: 09:50)
+- Ubuntu Server 12.04 LTS x64 on Amazon EC2 
+-- Image: ami-8e987ef9 (ubuntu-precise-12.04-amd64-server-20131003)
+-- Instance type: m3.medium (Install time: 10:19)
