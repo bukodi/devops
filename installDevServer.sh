@@ -206,6 +206,7 @@ function setupJenkins {
         echo 'Waiting for Jenkins restart...'
         sleep 2s
     done
+    jenkins-cli login --username admin --password $ADMIN_PASSWORD
 
     addApacheProxy '/jenkins' 'http://127.0.0.1:8082/jenkins' 'Jenkins'
 }
