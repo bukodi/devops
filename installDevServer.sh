@@ -257,6 +257,7 @@ service apache2 restart
 # branding options (Title, color, image)
 # -- /usr/local/nexus/nexus
 # test on AWS , TryStack and Rackspace
+# test when the admin password contains special characters
 
 echo "Completed. ( $START_TIME - $(date) )"
 exit 0
