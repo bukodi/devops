@@ -135,9 +135,38 @@ function setupNexus {
     
     ln -s /usr/local/nexus/bin/nexus /etc/init.d/nexus
     update-rc.d nexus defaults
+
+    #First start of service
     service nexus start
-    #TODO: wait for restart
-    #TODO: cahenge admin password
+    while [ -z "$(curl http://127.0.0.1:8081/nexus/service/local/status 2>&1 | grep '<state>STARTED</state>')" ]; do 
+        echo 'Waiting for Nexus start...'
+        sleep 2s
+    done    
+    
+    # Change admin password
+    curl -d "{
+                \"data\": {
+                    \"userId\": \"admin\", 
+                    \"oldPassword\":\"admin123\",
+                    \"newPassword\":\"$ADMIN_PASSWORD\"
+                }
+            }" \
+        -u admin:admin123 http://localhost:8081/nexus/service/local/users_changepw \
+        -H "Content-Type: application/json" -D-
+
+    #Prevent warning: "Base URL does not match your actual URL!"
+    cd /usr/local/sonatype-work/nexus/conf/
+    sed -i "s/<baseUrl>.*<\/baseUrl>/<baseUrl>https:\/\/$EXTERNAL_HOST_NAME\/nexus<\/baseUrl>/" nexus.xml
+    sed -i "s/<forceBaseUrl>.*<\/forceBaseUrl>/<forceBaseUrl>true<\/forceBaseUrl>/" nexus.xml
+    cd - > /dev/null
+
+    #Restart Nexus
+    service nexus start
+    while [ -z "$(curl http://127.0.0.1:8081/nexus/service/local/status 2>&1 | grep '<state>STARTED</state>')" ]; do 
+        echo 'Waiting for Nexus restart...'
+        sleep 2s
+    done    
+
     addApacheProxy '/nexus' 'http://127.0.0.1:8081/nexus' 'Nexus'
 }
 
@@ -227,7 +256,7 @@ service apache2 restart
 # use getopts() for parsing arguments
 # branding options (Title, color, image)
 # -- /usr/local/nexus/nexus
-# test on AWS
+# test on AWS , TryStack and Rackspace
 
 echo "Completed. ( $START_TIME - $(date) )"
 exit 0
