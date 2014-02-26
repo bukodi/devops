@@ -120,7 +120,7 @@ function setupNexus {
     echo $'\n\n*** Download and configure Nexus ****'
     cd /usr/local
     wget http://www.sonatype.org/downloads/nexus-latest-bundle.tar.gz
-    tar xvfz nexus-latest-bundle.tar.gz
+    tar xfz nexus-latest-bundle.tar.gz
     rm nexus-latest-bundle.tar.gz
     ln -s $(ls -d nexus-*) nexus  # create symlink /usr/local/nexus
     cd - > /dev/null
@@ -161,7 +161,7 @@ function setupNexus {
     cd - > /dev/null
 
     #Restart Nexus
-    service nexus start
+    service nexus restart
     while [ -z "$(curl http://127.0.0.1:8081/nexus/service/local/status 2>&1 | grep '<state>STARTED</state>')" ]; do 
         echo 'Waiting for Nexus restart...'
         sleep 2s
