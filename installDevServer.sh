@@ -249,12 +249,11 @@ setupShellinabox
 service apache2 restart 
 
 #TODO
-# setupNexus
-# add more Jenkins plugin
 # redirect Tomcat test virtual host
 # setupSelenuim
 # use the same certificate between installations
 # use getopts() for parsing arguments
+# setup firewall
 # branding options (Title, color, image)
 # -- /usr/local/nexus/nexus
 # test on AWS , TryStack and Rackspace
