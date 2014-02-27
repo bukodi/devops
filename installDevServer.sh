@@ -5,6 +5,7 @@
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
 EXTERNAL_HOST_NAME=$(hostname -f)
 START_TIME=$(date)
+GERRIT_VERSION="gerrit-2.8.1"
 
 
 if [ `whoami` != root ]; then
@@ -236,15 +237,32 @@ function setupShellinabox {
     addApacheProxy '/shellinabox' 'http://127.0.0.1:4201/' 'Shell-In-A-Box'
 }
 
+function setupGerrit {
+    echo $'\n\n*** Configure Gerrit ****'
+    wget "https://gerrit-releases.storage.googleapis.com/$GERRIT_VERSION.war"
+    mv $GERRIT_VERSION.war gerrit.war
+    java -jar gerrit.war init --batch --no-auto-start --show-stack-trace --site-path /opt/gerrit
+    sed -i 's/listenUrl = .*$/listenUrl = http:\/\/127.0.0.1:8083\/gerrit\//' /opt/gerrit/etc/gerrit.config
+    sed -i "s/canonicalWebUrl = .*$/canonicalWebUrl = https:\/\/$EXTERNAL_HOST_NAME\/gerrit\//" /opt/gerrit/etc/gerrit.config
+
+    # service shellinabox restart
+
+    addApacheProxy '/gerrit' 'http://127.0.0.1:8083/gerrit' 'Gerrit'
+}
+
 #########################################################################
 
 createAdminUser $ADMIN_PASSWORD
+
+#Setup services
 setupApache
 setupTomcat
 setupNexus
 setupJenkins
 setupWebmin
 setupShellinabox
+#TODO: setupGerrit 
+
 #Restart apache
 service apache2 restart 
 
