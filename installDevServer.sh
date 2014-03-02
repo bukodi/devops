@@ -7,6 +7,31 @@ EXTERNAL_HOST_NAME=$(hostname -f)
 START_TIME=$(date)
 GERRIT_VERSION="gerrit-2.8.1"
 
+#Used ports:
+# 80 - Apache2 redirects to 443
+# 443 - Apache2
+# 8080 - Tomcat
+# 8081 - Nexus
+# 8082 - Jenkins
+# 8083 - Gerrit
+# 4201 - ShellInABox
+# 10001 - Webmin
+
+
+#TODO
+# redirect Tomcat test virtual host
+# setupSelenuim
+# setup Gerrit
+# setup Sonar
+# use the same certificate between installations
+# use getopts() for parsing arguments
+# setup firewall
+# branding options (Title, color, image)
+# -- /usr/local/nexus/nexus
+# test on AWS , TryStack and Rackspace
+# test when the admin password contains special characters
+
+###############################################################################################
 
 if [ `whoami` != root ]; then
     echo 'Please run this script as root'
@@ -242,10 +267,11 @@ function setupGerrit {
     wget "https://gerrit-releases.storage.googleapis.com/$GERRIT_VERSION.war"
     mv $GERRIT_VERSION.war gerrit.war
     java -jar gerrit.war init --batch --no-auto-start --show-stack-trace --site-path /opt/gerrit
+    rm gerrit.war
     sed -i 's/listenUrl = .*$/listenUrl = http:\/\/127.0.0.1:8083\/gerrit\//' /opt/gerrit/etc/gerrit.config
-    sed -i "s/canonicalWebUrl = .*$/canonicalWebUrl = https:\/\/$EXTERNAL_HOST_NAME\/gerrit\//" /opt/gerrit/etc/gerrit.config
+    sed -i "s/canonicalWebUrl = .*$/canonicalWebUrl = http:\/\/$EXTERNAL_HOST_NAME\/gerrit\//" /opt/gerrit/etc/gerrit.config
 
-    # service shellinabox restart
+    /opt/gerrit/bin/gerrit.sh start
 
     addApacheProxy '/gerrit' 'http://127.0.0.1:8083/gerrit' 'Gerrit'
 }
@@ -261,23 +287,10 @@ setupNexus
 setupJenkins
 setupWebmin
 setupShellinabox
-#TODO: setupGerrit 
+setupGerrit 
 
 #Restart apache
 service apache2 restart 
-
-#TODO
-# redirect Tomcat test virtual host
-# setupSelenuim
-# setup Gerrit
-# setup Sonar
-# use the same certificate between installations
-# use getopts() for parsing arguments
-# setup firewall
-# branding options (Title, color, image)
-# -- /usr/local/nexus/nexus
-# test on AWS , TryStack and Rackspace
-# test when the admin password contains special characters
 
 echo "Completed. ( $START_TIME - $(date) )"
 exit 0
