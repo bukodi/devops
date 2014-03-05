@@ -4,4 +4,14 @@
 
 <web-app>
   <display-name>Archetype Created Web Application</display-name>
+  <servlet>
+  	<servlet-name>DebugServlet</servlet-name>
+  	<display-name>DebugServlet</display-name>
+  	<description>Debug basic connection parameters</description>
+  	<servlet-class>com.bukodi.devops.example.DebugServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+  	<servlet-name>DebugServlet</servlet-name>
+  	<url-pattern>/DebugServlet</url-pattern>
+  </servlet-mapping>
 </web-app>
