@@ -182,8 +182,10 @@ function setupNexus {
 
     #Prevent warning: "Base URL does not match your actual URL!"
     cd /usr/local/sonatype-work/nexus/conf/
-    sed -i "s/<baseUrl>.*<\/baseUrl>/<baseUrl>https:\/\/$EXTERNAL_HOST_NAME\/nexus<\/baseUrl>/" nexus.xml
-    sed -i "s/<forceBaseUrl>.*<\/forceBaseUrl>/<forceBaseUrl>true<\/forceBaseUrl>/" nexus.xml
+    xmlstarlet ed -L -d "/nexusConfiguration/restApi" nexus.xml
+    xmlstarlet ed -L -s "/nexusConfiguration" -t elem -n "restApi"  nexus.xml
+    xmlstarlet ed -L -s "/nexusConfiguration/restApi" -t elem -n "baseUrl" -v  "https://$EXTERNAL_HOST_NAME/nexus"  nexus.xml
+    xmlstarlet ed -L -s "/nexusConfiguration/restApi" -t elem -n "forceBaseUrl" -v  "true"  nexus.xml 
     cd - > /dev/null
 
     #Restart Nexus
