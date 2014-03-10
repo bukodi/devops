@@ -18,6 +18,7 @@ apt-get update
 apt-get -y upgrade
 
 apt-get -y install mc \
+ xmlstarlet \
  openjdk-7-jdk maven \
  jenkins jenkins-cli \
  xvfb xfonts-base xfonts-75dpi xfonts-100dpi \
