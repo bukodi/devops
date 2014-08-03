@@ -20,7 +20,7 @@ apt-get -y upgrade
 apt-get -y install mc \
  xmlstarlet \
  openjdk-7-jdk maven \
- jenkins jenkins-cli \
+ jenkins \
  xvfb xfonts-base xfonts-75dpi xfonts-100dpi \
  firefox \
  apache2 \
