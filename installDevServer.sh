@@ -15,7 +15,10 @@ GERRIT_VERSION="gerrit-2.8.1"
 # 443 - Apache2
 # 8080 - Tomcat
 # 8081 - Nexus
-# 8082 - Jenkins
+# 8082 - Jenkins cica
+
+
+
 # 8083 - Gerrit
 # 4201 - ShellInABox
 # 10001 - Webmin
