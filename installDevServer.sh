@@ -2,8 +2,10 @@
 
 # Start this: bash <(curl https://raw2.github.com/bukodi/devops/master/installDevServer.sh) [AdminPassw0rd]
 
-set -u
+set -eux
 set -o pipefail
+
+# TODO: redirect output to file See: http://stackoverflow.com/a/20564208
 
 SCRIPT_BASE_URL=https://raw2.github.com/bukodi/devops/master
 EXTERNAL_HOST_NAME=$(hostname -f)
