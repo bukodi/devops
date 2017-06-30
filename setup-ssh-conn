@@ -1,0 +1,152 @@
+#!/bin/bash
+#
+# Connects two nodes through SSH
+#
+# This script creates an rsync user on both source and destination server
+# and setup the SSH conciguration between them.
+# Also supports cluster address if the server side is loadbalanced
+#  ,----------------------.       ,----------------------.
+#  |clienthost1           |       |serverhost1           |
+#  |                      |       |servercluster         |
+#  |----------------------|       |----------------------|
+#  |rsyncusr              |       |rsyncusr              |
+#  |~/.ssh/id_rsa         |  SSH  |~/.ssh/authorized_keys|
+#  |~/.ssh/id_rsa.pub     |------>|                      |
+#  |~/.ssh/known_hosts    | rsync |                      |
+#  |----------------------|       |----------------------|
+#  |adminusr (sudo member)|       |admiusr (sudo member) |
+#  `----------------------'       `----------------------'
+#            ^                            ^
+#        SSH |                            | SSH
+#            |           ,--------.       |
+#            |           |adminpc |       |
+#            \-----------|--------|-------/
+#   Upload and execute   |adminusr|  Upload and execute
+#   /tmp/client-script   `--------'  /tmp/server-script
+#
+# Sample usage:
+# adminusr@adminpc:~$ ./setup-ssh-conn rsyncusr clienthost1 serverhost1 serverc$
+#
+############ command line parameters #################
+#
+# User name on the client and server node
+declare -r CLIENTUSER=$1 
+declare -r SERVERUSER=$1
+# Address of the client node
+declare -r CLIENTADDR=$2
+# Address of the server node
+declare -r SERVERADDR=$3
+
+#If the server node loadbalanced, the cluster address of the servers
+declare -r CLUSTERADDR=$4
+######### END OF: command line parameters #############
+
+set -e
+
+
+main() {
+  echo "$CLIENTUSER $CLIENTADDR $SERVERADDR $CLUSTERADDR"
+  getServerPubKey
+  createScriptForClient
+
+  #Upload and execute client-script
+  scp /tmp/client-script $CLIENTADDR:/tmp
+  echo ">>> Executing on $CLIENTADDR client side >>>" 
+  ssh -tt $CLIENTADDR '( sudo bash /tmp/client-script )'
+
+   #Download the user's public key
+  scp $CLIENTADDR:/tmp/$CLIENTUSER-id_rsa.pub /tmp
+  clipubkey=$(cat /tmp/$CLIENTUSER-id_rsa.pub)
+
+  createScriptForServer
+  #Upload and execute server-script
+  scp /tmp/server-script $SERVERADDR:/tmp
+  echo ">>> Executing on $SERVERADDR server side >>>"
+  ssh -tt $SERVERADDR '( sudo bash /tmp/server-script )'
+
+  #Clean up
+  rm /tmp/$CLIENTUSER-id_rsa.pub
+  rm /tmp/client-script
+  rm /tmp/server-script
+}
+
+function getServerPubKey {
+  srvpubkey=$(ssh-keyscan -t rsa $SERVERADDR 2> /dev/null)
+  if [[ -z $srvpubkey ]]; then
+     exit -1
+  fi
+
+  # Add custer address
+  if [[ $CLUSTERADDR ]]; then
+    srvpubkey="$CLUSTERADDR,$srvpubkey"
+  fi
+}
+
+# Create a remotely executable script for the client
+function createScriptForClient {
+########### Begin of /tmp/client-script ##################
+  echo "#/bin/bash
+set -e
+
+#Create user if doesn't exists
+if ! id -u $CLIENTUSER > /dev/null 2>&1; then
+  useradd $CLIENTUSER --create-home
+fi
+#Create SSH keypair if doesn't exists
+if [[ ! -e /home/$CLIENTUSER/.ssh/id_rsa.pub ]]; then
+  su $CLIENTUSER -c 'ssh-keygen -q -t rsa -b 4096 -N \"\" -C '$CLIENTUSER@$CLIENTADDR' -f ~/.ssh/id_rsa'
+fi
+#Move pub key to /tmp
+cp /home/$CLIENTUSER/.ssh/id_rsa.pub /tmp/$CLIENTUSER-id_rsa.pub
+chmod 644 /tmp/$CLIENTUSER-id_rsa.pub
+
+#Create known_hosts if doesn't exists
+if [[ ! -e /home/$CLIENTUSER/.ssh/known_hosts ]]; then
+  touch /home/$CLIENTUSER/.ssh/known_hosts
+fi
+
+# Add server pub key to kown_hosts
+ssh-keygen -R $SERVERADDR -f /home/$CLIENTUSER/.ssh/known_hosts  > /dev/null 2>&1
+echo \"$srvpubkey\" >> /home/$CLIENTUSER/.ssh/known_hosts
+chmod 755 /home/$CLIENTUSER/.ssh/
+chmod 644 /home/$CLIENTUSER/.ssh/known_hosts
+chown root:$CLIENTUSER /home/$CLIENTUSER/.ssh/
+chown root:$CLIENTUSER /home/$CLIENTUSER/.ssh/known_hosts
+
+echo \"<<< SSH client side setup completed for $CLIENTUSER@$CLIENTADDR to $SERVERADDR connection <<<\"
+" > /tmp/client-script
+########### End of /tmp/client-script ##################
+chmod 755 /tmp/client-script 
+}
+
+# Create a remotely executable script for the server
+function createScriptForServer {
+########### Begin of /tmp/server-script ##################
+  echo "#/bin/bash
+set -e
+
+#Create user if doesn't exists
+if ! id -u $SERVERUSER > /dev/null 2>&1; then
+  useradd $SERVERUSER --create-home
+fi
+
+#Create authorized_keys if doesn't exists
+if [[ ! -e /home/$SERVERUSER/.ssh/authorized_keys ]]; then
+  mkdir /home/$SERVERUSER/.ssh/
+  chmod 755 /home/$SERVERUSER/.ssh/
+  touch /home/$SERVERUSER/.ssh/authorized_keys
+  chmod 644 /home/$SERVERUSER/.ssh/authorized_keys
+  chown -R root:$SERVERUSER /home/$SERVERUSER/.ssh/
+fi
+
+# Replace client pub key in authorized_keys
+cat /home/$SERVERUSER/.ssh/authorized_keys |  grep --invert-match $CLIENTUSER@$CLIENTADDR  > /home/$SERVERUSER/.ssh/authorized_keys || true
+echo \"$clipubkey\" >> /home/$SERVERUSER/.ssh/authorized_keys
+echo \"<<< SSH server side setup completed for $CLIENTUSER@$CLIENTADDR to $SERVERADDR connection <<<\"
+" > /tmp/server-script
+########### End of /tmp/server-script ##################
+chmod 755 /tmp/server-script
+}
+
+
+main "$@"
